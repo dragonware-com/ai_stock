@@ -23,7 +23,7 @@ st.set_page_config(
 class StockAnalyzer:
     def __init__(self):
         self.scaler = StandardScaler()
-        self.model = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=8)
         
     def fetch_stock_data(self, symbol, period="1y"):
         """Fetch stock data with error handling"""
@@ -616,7 +616,7 @@ def main():
     period = st.sidebar.selectbox(
         "📅 Analysis Period:",
         options=['1mo', '3mo', '6mo', '1y', '2y', '5y'],
-        index=4
+        index=5
     )
     
     st.sidebar.markdown("---")
