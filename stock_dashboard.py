@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import warnings
+import time
 warnings.filterwarnings('ignore')
 
 # Configure Streamlit page
@@ -23,7 +24,7 @@ st.set_page_config(
 class StockAnalyzer:
     def __init__(self):
         self.scaler = StandardScaler()
-        self.model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=8)
+        self.model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=4)
         
     def fetch_stock_data(self, symbol, period="1y"):
         """Fetch stock data with error handling"""
@@ -467,6 +468,7 @@ def create_performance_metrics(data, symbol):
 
 def display_summary_table_all(symbols_dict, analyzer, period):
     """Display a summary table for all symbols in popular_stocks."""
+    start_time = time.time()
     with st.spinner("⏳ Building summary table for all stocks... Please wait."):
         headers = ["Symbol", "Current", "Predict", "%", "Confidence"]
         rows = []
@@ -503,6 +505,8 @@ def display_summary_table_all(symbols_dict, analyzer, period):
                     None,
                     "N/A"
                 ])
+        elapsed = time.time() - start_time
+        st.info(f"⏱️ Table built in {elapsed:.1f} seconds.")
         # Build HTML table with color for % column
         table_html = "<table style='width:100%; border-collapse:collapse;'>"
         # Header
