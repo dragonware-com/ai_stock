@@ -24,7 +24,7 @@ st.set_page_config(
 class StockAnalyzer:
     def __init__(self):
         self.scaler = StandardScaler()
-        self.model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=4)
+        self.model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
         
     def fetch_stock_data(self, symbol, period="1y"):
         """Fetch stock data with error handling"""
