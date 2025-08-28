@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import warnings
 import time
+import multiprocessing
 warnings.filterwarnings('ignore')
 
 # Configure Streamlit page
@@ -466,45 +467,51 @@ def create_performance_metrics(data, symbol):
     
     st.plotly_chart(fig, use_container_width=True)
 
+def _fetch_summary_row(args):
+    sym, analyzer, period = args
+    try:
+        data, _ = analyzer.fetch_stock_data(sym, period)
+        if data is not None and not data.empty:
+            data = analyzer.calculate_technical_indicators(data)
+            latest_price = data['Close'].iloc[-1]
+            model_info = analyzer.train_prediction_model(data)
+            prediction = analyzer.predict_next_price(model_info) if model_info else None
+            predicted_change = ((prediction - latest_price) / latest_price) * 100 if prediction is not None else None
+            confidence = model_info['test_score'] if model_info else 0
+            return [
+                sym,
+                f"${latest_price:.2f}",
+                f"${prediction:.2f}" if prediction is not None else "N/A",
+                predicted_change,
+                f"{confidence:.1%}" if model_info else "N/A"
+            ]
+        else:
+            return [
+                sym,
+                "N/A",
+                "N/A",
+                None,
+                "N/A"
+            ]
+    except Exception:
+        return [
+            sym,
+            "N/A",
+            "N/A",
+            None,
+            "N/A"
+        ]
+
 def display_summary_table_all(symbols_dict, analyzer, period):
     """Display a summary table for all symbols in popular_stocks."""
     start_time = time.time()
     with st.spinner("⏳ Building summary table for all stocks... Please wait."):
         headers = ["Symbol", "Current", "Predict", "%", "Confidence"]
-        rows = []
-        for sym in symbols_dict.values():
-            try:
-                data, _ = analyzer.fetch_stock_data(sym, period)
-                if data is not None and not data.empty:
-                    data = analyzer.calculate_technical_indicators(data)
-                    latest_price = data['Close'].iloc[-1]
-                    model_info = analyzer.train_prediction_model(data)
-                    prediction = analyzer.predict_next_price(model_info) if model_info else None
-                    predicted_change = ((prediction - latest_price) / latest_price) * 100 if prediction is not None else None
-                    confidence = model_info['test_score'] if model_info else 0
-                    rows.append([
-                        sym,
-                        f"${latest_price:.2f}",
-                        f"${prediction:.2f}" if prediction is not None else "N/A",
-                        predicted_change,
-                        f"{confidence:.1%}" if model_info else "N/A"
-                    ])
-                else:
-                    rows.append([
-                        sym,
-                        "N/A",
-                        "N/A",
-                        None,
-                        "N/A"
-                    ])
-            except Exception:
-                rows.append([
-                    sym,
-                    "N/A",
-                    "N/A",
-                    None,
-                    "N/A"
-                ])
+        # Prepare arguments for multiprocessing
+        args_list = [(sym, analyzer, period) for sym in symbols_dict.values()]
+        # Use multiprocessing to parallelize the fetching
+        with multiprocessing.get_context("spawn").Pool(processes=min(8, len(args_list))) as pool:
+            rows = pool.map(_fetch_summary_row, args_list)
         elapsed = time.time() - start_time
         st.info(f"⏱️ Table built in {elapsed:.1f} seconds.")
         # Build HTML table with color for % column
