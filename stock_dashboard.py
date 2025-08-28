@@ -510,7 +510,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
         # Prepare arguments for multiprocessing
         args_list = [(sym, analyzer, period) for sym in symbols_dict.values()]
         # Use multiprocessing to parallelize the fetching
-        with multiprocessing.get_context("spawn").Pool(processes=min(8, len(args_list))) as pool:
+        with multiprocessing.get_context("spawn").Pool(processes=min(16, len(args_list))) as pool:
             rows = pool.map(_fetch_summary_row, args_list)
         elapsed = time.time() - start_time
         st.info(f"⏱️ Table built in {elapsed:.1f} seconds.")
