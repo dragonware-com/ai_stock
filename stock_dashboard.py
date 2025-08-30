@@ -490,7 +490,7 @@ def _fetch_summary_row(args):
             else:
                 price_cell_style = "color:#000000; font-weight:bold;"
 
-            current_price_html = f"({price_change_pct:+.2f}%) ${latest_price:.2f}"
+            current_price_html = f"({price_change_pct:+.2f}%) {latest_price:.2f}"
 
             # Color scheme for prediction cell (based on predicted_change)
             if predicted_change is not None:
@@ -500,7 +500,7 @@ def _fetch_summary_row(args):
                     predict_cell_style = "background-color:#441e1e; color:#ff4444; font-weight:bold;"
                 else:
                     predict_cell_style = "color:#000000; font-weight:bold;"
-                predict_col = (f"${prediction:.2f} ({predicted_change:+.2f}%)", predict_cell_style)
+                predict_col = (f"({predicted_change:+.2f}%) {prediction:.2f}", predict_cell_style)
             else:
                 predict_col = ("N/A", "")
 
@@ -532,7 +532,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
     """Display a summary table for all symbols in popular_stocks."""
     start_time = time.time()
     with st.spinner("⏳ Building summary table for all stocks... Please wait."):
-        headers = ["Symbol", "Current", "Predict (Change %)", "Confidence"]
+        headers = ["Symbol", "(%) Current", "(%) Predict", "Confidence"]
         args_list = [(sym, analyzer, period) for sym in symbols_dict.values()]
         with multiprocessing.get_context("spawn").Pool(processes=min(16, len(args_list))) as pool:
             rows = pool.map(_fetch_summary_row, args_list)
