@@ -482,7 +482,7 @@ def _fetch_summary_row(args):
             predicted_change = ((prediction - latest_price) / latest_price) * 100 if prediction is not None else None
             confidence = model_info['test_score'] if model_info else 0
 
-            # Use the same color scheme as pct_style for cell background (not span)
+            # Color scheme for current price cell
             if price_change_pct > 0:
                 price_cell_style = "background-color:#1e4427; color:#00ff88; font-weight:bold;"
             elif price_change_pct < 0:
@@ -490,21 +490,32 @@ def _fetch_summary_row(args):
             else:
                 price_cell_style = "color:#000000; font-weight:bold;"
 
-            # Append percent change in parenthesis, no span
             current_price_html = f"({price_change_pct:+.2f}%) ${latest_price:.2f}"
+
+            # Color scheme for prediction cell (based on predicted_change)
+            if predicted_change is not None:
+                if predicted_change > 0:
+                    predict_cell_style = "background-color:#1e4427; color:#00ff88; font-weight:bold;"
+                elif predicted_change < 0:
+                    predict_cell_style = "background-color:#441e1e; color:#ff4444; font-weight:bold;"
+                else:
+                    predict_cell_style = "color:#000000; font-weight:bold;"
+                predict_col = (f"${prediction:.2f} ({predicted_change:+.2f}%)", predict_cell_style)
+            else:
+                predict_col = ("N/A", "")
 
             return [
                 sym,
-                (current_price_html, price_cell_style),  # Pass style separately
-                f"{prediction:.2f}" if prediction is not None else "N/A",
-                predicted_change,
+                (current_price_html, price_cell_style),  # Current price with style
+                predict_col,                             # Prediction with style
+                confidence,
                 f"{confidence:.1%}" if model_info else "N/A"
             ]
         else:
             return [
                 sym,
                 ("N/A", ""),  # No style
-                "N/A",
+                ("N/A", ""),
                 None,
                 "N/A"
             ]
@@ -512,7 +523,7 @@ def _fetch_summary_row(args):
         return [
             sym,
             ("N/A", ""),
-            "N/A",
+            ("N/A", ""),
             None,
             "N/A"
         ]
@@ -521,7 +532,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
     """Display a summary table for all symbols in popular_stocks."""
     start_time = time.time()
     with st.spinner("⏳ Building summary table for all stocks... Please wait."):
-        headers = ["Symbol", "Current", "Predict", "%", "Confidence"]
+        headers = ["Symbol", "Current", "Predict (Change %)", "Confidence"]
         args_list = [(sym, analyzer, period) for sym in symbols_dict.values()]
         with multiprocessing.get_context("spawn").Pool(processes=min(16, len(args_list))) as pool:
             rows = pool.map(_fetch_summary_row, args_list)
@@ -536,19 +547,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
         table_html += "</tr>"
         # Rows
         for row in rows:
-            pct = row[3]
-            if pct is None or pct == "N/A":
-                pct_str = "N/A"
-                pct_style = ""
-            else:
-                pct_str = f"{pct:+.2f}%"
-                if pct > 0:
-                    pct_style = "background-color:#1e4427; color:#00ff88; font-weight:bold;"
-                elif pct < 0:
-                    pct_style = "background-color:#441e1e; color:#ff4444; font-weight:bold;"
-                else:
-                    pct_style = ""
-            # Color for Confidence column
+            confidence_val = row[3]
             confidence_str = row[4]
             conf_style = ""
             try:
@@ -562,17 +561,21 @@ def display_summary_table_all(symbols_dict, analyzer, period):
             table_html += "<tr>"
             for i, cell in enumerate(row):
                 style = "padding:6px; border:1px solid #333;"
-                if i == 3:
-                    style += pct_style
-                    cell = pct_str
-                elif i == 2:
-                    style += pct_style
-                elif i == 4:
-                    style += conf_style
-                # Render Current price cell with its cell background color
+                # Current price cell with its cell background color
                 if i == 1 and isinstance(cell, tuple):
                     value, cell_style = cell
                     table_html += f"<td style='{style}{cell_style}'>{value}</td>"
+                # Prediction cell with its cell background color
+                elif i == 2 and isinstance(cell, tuple):
+                    value, cell_style = cell
+                    table_html += f"<td style='{style}{cell_style}'>{value}</td>"
+                # Confidence column
+                elif i == 4:
+                    style += conf_style
+                    table_html += f"<td style='{style}'>{cell}</td>"
+                # Skip the old percent column (now merged)
+                elif i == 3:
+                    continue
                 else:
                     table_html += f"<td style='{style}'>{cell}</td>"
             table_html += "</tr>"
