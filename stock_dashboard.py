@@ -474,21 +474,36 @@ def _fetch_summary_row(args):
         if data is not None and not data.empty:
             data = analyzer.calculate_technical_indicators(data)
             latest_price = data['Close'].iloc[-1]
+            prev_price = data['Close'].iloc[-2] if len(data) > 1 else latest_price
+            price_change = latest_price - prev_price
+            price_change_pct = ((price_change / prev_price) * 100) if prev_price != 0 else 0
             model_info = analyzer.train_prediction_model(data)
             prediction = analyzer.predict_next_price(model_info) if model_info else None
             predicted_change = ((prediction - latest_price) / latest_price) * 100 if prediction is not None else None
             confidence = model_info['test_score'] if model_info else 0
+
+            # Use the same color scheme as pct_style for cell background (not span)
+            if price_change_pct > 0:
+                price_cell_style = "background-color:#1e4427; color:#00ff88; font-weight:bold;"
+            elif price_change_pct < 0:
+                price_cell_style = "background-color:#441e1e; color:#ff4444; font-weight:bold;"
+            else:
+                price_cell_style = "color:#000000; font-weight:bold;"
+
+            # Append percent change in parenthesis, no span
+            current_price_html = f"${latest_price:.2f} ({price_change_pct:+.2f}%)"
+
             return [
                 sym,
-                f"${latest_price:.2f}",
-                f"${prediction:.2f}" if prediction is not None else "N/A",
+                (current_price_html, price_cell_style),  # Pass style separately
+                f"{prediction:.2f}" if prediction is not None else "N/A",
                 predicted_change,
                 f"{confidence:.1%}" if model_info else "N/A"
             ]
         else:
             return [
                 sym,
-                "N/A",
+                ("N/A", ""),  # No style
                 "N/A",
                 None,
                 "N/A"
@@ -496,7 +511,7 @@ def _fetch_summary_row(args):
     except Exception:
         return [
             sym,
-            "N/A",
+            ("N/A", ""),
             "N/A",
             None,
             "N/A"
@@ -507,9 +522,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
     start_time = time.time()
     with st.spinner("⏳ Building summary table for all stocks... Please wait."):
         headers = ["Symbol", "Current", "Predict", "%", "Confidence"]
-        # Prepare arguments for multiprocessing
         args_list = [(sym, analyzer, period) for sym in symbols_dict.values()]
-        # Use multiprocessing to parallelize the fetching
         with multiprocessing.get_context("spawn").Pool(processes=min(16, len(args_list))) as pool:
             rows = pool.map(_fetch_summary_row, args_list)
         elapsed = time.time() - start_time
@@ -556,7 +569,12 @@ def display_summary_table_all(symbols_dict, analyzer, period):
                     style += pct_style
                 elif i == 4:
                     style += conf_style
-                table_html += f"<td style='{style}'>{cell}</td>"
+                # Render Current price cell with its cell background color
+                if i == 1 and isinstance(cell, tuple):
+                    value, cell_style = cell
+                    table_html += f"<td style='{style}{cell_style}'>{value}</td>"
+                else:
+                    table_html += f"<td style='{style}'>{cell}</td>"
             table_html += "</tr>"
         table_html += "</table>"
         st.markdown(table_html, unsafe_allow_html=True)
