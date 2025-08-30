@@ -491,7 +491,7 @@ def _fetch_summary_row(args):
                 price_cell_style = "color:#000000; font-weight:bold;"
 
             # Append percent change in parenthesis, no span
-            current_price_html = f"${latest_price:.2f} ({price_change_pct:+.2f}%)"
+            current_price_html = f"({price_change_pct:+.2f}%) ${latest_price:.2f}"
 
             return [
                 sym,
