@@ -594,7 +594,7 @@ def display_summary_table_all(symbols_dict, analyzer, period):
         st.markdown(table_html, unsafe_allow_html=True)
 
     # Add logic to auto-select the stock if ?stock=SYMBOL is in the URL
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params
     if "stock" in query_params:
         selected = query_params["stock"][0]
         # Rerun with the selected stock (simulate dropdown selection)
@@ -650,7 +650,7 @@ def main():
     }
 
     # --- Handle query param for stock selection ---
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params
     stock_options = ['ALL'] + list(popular_stocks.keys()) + ['Custom']
     default_index = 0
     if "stock" in query_params:
