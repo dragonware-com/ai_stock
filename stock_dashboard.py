@@ -561,8 +561,19 @@ def display_summary_table_all(symbols_dict, analyzer, period):
             table_html += "<tr>"
             for i, cell in enumerate(row):
                 style = "padding:6px; border:1px solid #333;"
+                # Symbol column as hyperlink
+                if i == 0:
+                    symbol = cell
+                    # Use Streamlit query params to set symbol in URL
+                    # This will reload the page with the symbol selected
+                    # e.g. ?stock=GOOG
+                    table_html += (
+                        f"<td style='{style}'>"
+                        f"<a href='?stock={symbol}' style='color:#00bfff; text-decoration:underline;'>{symbol}</a>"
+                        f"</td>"
+                    )
                 # Current price cell with its cell background color
-                if i == 1 and isinstance(cell, tuple):
+                elif i == 1 and isinstance(cell, tuple):
                     value, cell_style = cell
                     table_html += f"<td style='{style}{cell_style}'>{value}</td>"
                 # Prediction cell with its cell background color
@@ -581,6 +592,14 @@ def display_summary_table_all(symbols_dict, analyzer, period):
             table_html += "</tr>"
         table_html += "</table>"
         st.markdown(table_html, unsafe_allow_html=True)
+
+    # Add logic to auto-select the stock if ?stock=SYMBOL is in the URL
+    query_params = st.experimental_get_query_params()
+    if "stock" in query_params:
+        selected = query_params["stock"][0]
+        # Rerun with the selected stock (simulate dropdown selection)
+        st.session_state["stock_choice"] = selected
+        st.experimental_rerun()
 
 # Streamlit App
 def main():
@@ -629,12 +648,24 @@ def main():
         'BABA':'BABA', 
         'WMT':'WMT'
     }
-    
+
+    # --- Handle query param for stock selection ---
+    query_params = st.experimental_get_query_params()
     stock_options = ['ALL'] + list(popular_stocks.keys()) + ['Custom']
+    default_index = 0
+    if "stock" in query_params:
+        stock_from_url = query_params["stock"][0]
+        if stock_from_url in popular_stocks:
+            default_index = stock_options.index(stock_from_url)
+        else:
+            default_index = stock_options.index('Custom')
+    # ---------------------------------------------
+
     stock_choice = st.sidebar.selectbox(
         "🏢 Select Stock:",
         options=stock_options,
-        index=0
+        index=default_index,
+        key="stock_choice"
     )
     
     if stock_choice == 'Custom':
