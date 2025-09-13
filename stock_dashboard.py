@@ -562,16 +562,19 @@ def display_summary_table_all(symbols_dict, analyzer, period):
             for i, cell in enumerate(row):
                 style = "padding:6px; border:1px solid #333;"
                 # Symbol column as hyperlink
-                if i == 0:
+                if i == 0:  # Symbol column
                     symbol = cell
-                    # Use Streamlit query params to set symbol in URL
-                    # This will reload the page with the symbol selected
-                    # e.g. ?stock=GOOG
-                    table_html += (
-                        f"<td style='{style}'>"
-                        f"<a href='?stock={symbol}' style='color:#00bfff; text-decoration:underline;'>{symbol}</a>"
-                        f"</td>"
-                    )
+                    # Find the key in symbols_dict that matches this symbol
+                    stock_key = next((k for k, v in symbols_dict.items() if v == symbol), None)
+                    if stock_key:
+                        table_html += (
+                            f"<td style='{style}'>"
+                            f"<a href='?stock={stock_key}' target='_blank' "  # Use stock_key instead of symbol
+                            f"style='color:#00bfff; text-decoration:underline;'>{symbol}</a>"
+                            f"</td>"
+                        )
+                    else:
+                        table_html += f"<td style='{style}'>{symbol}</td>"
                 # Current price cell with its cell background color
                 elif i == 1 and isinstance(cell, tuple):
                     value, cell_style = cell
@@ -653,13 +656,16 @@ def main():
     query_params = st.query_params
     stock_options = ['ALL'] + list(popular_stocks.keys()) + ['Custom']
     default_index = 0
+
     if "stock" in query_params:
-        stock_from_url = query_params["stock"][0]
-        if stock_from_url in popular_stocks:
+        stock_from_url = query_params["stock"]
+        if stock_from_url in stock_options:  # Check against stock_options instead of popular_stocks
             default_index = stock_options.index(stock_from_url)
-        else:
-            default_index = stock_options.index('Custom')
-    # ---------------------------------------------
+        elif stock_from_url in popular_stocks.values():
+            # Find the key if value matches
+            stock_key = next((k for k, v in popular_stocks.items() if v == stock_from_url), None)
+            if stock_key in stock_options:
+                default_index = stock_options.index(stock_key)
 
     stock_choice = st.sidebar.selectbox(
         "🏢 Select Stock:",
