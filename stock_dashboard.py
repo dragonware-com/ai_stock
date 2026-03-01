@@ -803,6 +803,52 @@ def main():
     
     st.markdown("---")
     
+    # AI Technical Analysis Prompt Box
+    if show_analysis:
+        st.subheader("💬 AI Technical Analysis Chat")
+        # Example prompt preloaded directly in the text area so users can edit it immediately
+        example_prompt = (
+            "Analyze the current trend for {}. "
+            "What are the key support and resistance levels? "
+            "Provide a detailed technical analysis based on RSI, MACD, Bollinger Bands, and moving averages."
+        ).format(symbol)
+        ai_prompt = st.text_area(
+            label="Enter your technical analysis question or prompt:",
+            value=example_prompt,
+            height=150,
+            help="Type your technical analysis questions here. This prompt can be used with any AI chat system to get personalized technical analysis for this stock.",
+            key=f"ai_prompt_{symbol}"
+        )
+        # Action button to open Gemini chat with the prompt
+        st.subheader("🔗 Share Prompt")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            copy_button = st.button("📋 Copy Prompt", key=f"copy_{symbol}")
+        
+        with col2:
+            gemini_url = f"https://gemini.google.com/?q={urllib.parse.quote(example_prompt)}"
+            st.markdown(
+                f'<a href="{gemini_url}" target="_blank"><button style="padding:8px 16px; font-size:0.9em; background-color:#ffcc00; border:none; cursor:pointer;">🚀 Open in Gemini</button></a>',
+                unsafe_allow_html=True
+            )
+        
+        if copy_button and ai_prompt:
+            # Use JavaScript to copy text to clipboard - show it via markdown for immediate execution
+            escaped_prompt = example_prompt.replace('\\', '\\\\').replace('`', '\\`').replace('"', '\\"')
+            st.markdown(
+                f"""<script>
+                    navigator.clipboard.writeText(`{escaped_prompt}`).then(function() {{
+                        alert("✅ Prompt copied to clipboard!");
+                    }}, function(err) {{
+                        console.error("Failed to copy: ", err);
+                    }});
+                </script>""",
+                unsafe_allow_html=True
+            )
+    # Additional Analysis Tabs
+    st.markdown("---")
+    
     # Advanced Chart
     if show_technical:
         st.subheader("📈 Advanced Technical Analysis")
@@ -891,42 +937,6 @@ def main():
                     st.warning(insight)
             else:
                 st.info(insight)
-    
-    # AI Technical Analysis Prompt Box
-    if show_analysis:
-        st.subheader("💬 AI Technical Analysis Chat")
-        # Example prompt preloaded directly in the text area so users can edit it immediately
-        example_prompt = (
-            "Analyze the current trend for {}. "
-            "What are the key support and resistance levels? "
-            "Provide a detailed technical analysis based on RSI, MACD, Bollinger Bands, and moving averages."
-        ).format(symbol)
-        ai_prompt = st.text_area(
-            label="Enter your technical analysis question or prompt:",
-            value=example_prompt,
-            height=150,
-            help="Type your technical analysis questions here. This prompt can be used with any AI chat system to get personalized technical analysis for this stock.",
-            key=f"ai_prompt_{symbol}"
-        )
-        # Action button to open Gemini chat with the prompt
-        st.subheader("🔗 Share Prompt")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            copy_button = st.button("📋 Copy Prompt", key=f"copy_{symbol}")
-        
-        with col2:
-            gemini_url = f"https://gemini.google.com/?q={urllib.parse.quote(ai_prompt)}"
-            st.markdown(
-                f'<a href="{gemini_url}" target="_blank"><button style="padding:8px 16px; font-size:0.9em; background-color:#ffcc00; border:none; cursor:pointer;">🚀 Open in Gemini</button></a>',
-                unsafe_allow_html=True
-            )
-        
-        if copy_button:
-            st.session_state['copied_prompt'] = ai_prompt
-            st.success("✅ Prompt copied to clipboard!")
-    # Additional Analysis Tabs
-    st.markdown("---")
     
     tab1, tab2, tab3 = st.tabs(["📋 Company Info", "📊 Raw Data", "🔧 Technical Indicators"])
     
