@@ -822,10 +822,8 @@ def main():
         )
         # Action button to open Gemini chat with the prompt
         st.subheader("🔗 Share Prompt")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            html_code = f"""
+        safe_text = ai_prompt.replace("\\", "\\\\").replace("`", "\\`")
+        html_code = f"""
 <script>
 function copyToClipboard(btn) {{
     navigator.clipboard.writeText(`{ai_prompt}`).then(function() {{
@@ -837,30 +835,43 @@ function copyToClipboard(btn) {{
         console.error('Could not copy text: ', err);
     }});
 }}
+
+function openGemini() {{
+    // We encode the text and send it to Google Search's AI Mode (powered by Gemini)
+    // since the main gemini.google.com app ignores URL parameters natively.
+    const encodedText = encodeURIComponent(`{safe_text}`);
+    window.open('https://www.google.com/search?udm=50&q=' + encodedText, '_blank');
+}}
 </script>
 
-<button onclick="copyToClipboard(this)" 
-        style="padding: 8px 16px; 
-               border-radius: 8px; 
-               border: 1px solid #dcdcdc; 
-               background-color: white; 
-               color: #31333F; 
-               cursor: pointer; 
-               font-family: sans-serif;">
-    📋 Copy to Clipboard
-</button>
-"""
+<div style="display: flex; gap: 10px;">
+    <button onclick="copyToClipboard(this)" 
+            style="padding: 8px 16px; 
+                   border-radius: 8px; 
+                   border: 1px solid #dcdcdc; 
+                   background-color: white; 
+                   color: #31333F; 
+                   cursor: pointer; 
+                   font-family: sans-serif;
+                   width: 180px;">
+        📋 Copy to Clipboard
+    </button>
 
-            # 3. Render the HTML component in Streamlit
-            components.html(html_code, height=50)
-        
-        with col2:
-            gemini_url = f"https://gemini.google.com/?q={urllib.parse.quote(example_prompt)}"
-            st.markdown(
-                f'<a href="{gemini_url}" target="_blank"><button style="padding:8px 16px; font-size:0.9em; background-color:#ffcc00; border:none; cursor:pointer;">🚀 Open in Gemini</button></a>',
-                unsafe_allow_html=True
-            )
-        
+    <button onclick="openGemini()" 
+            style="padding: 8px 16px; 
+                   border-radius: 8px; 
+                   border: 1px solid #dcdcdc; 
+                   background-color: white; 
+                   color: #31333F; 
+                   cursor: pointer; 
+                   font-family: sans-serif;
+                   width: 180px;">
+        ✨ Open in Google
+    </button>
+</div>
+"""
+    components.html(html_code, height=60)
+    
     # Additional Analysis Tabs
     st.markdown("---")
     
