@@ -14,6 +14,7 @@ import time
 import multiprocessing
 import json
 import urllib.parse
+import streamlit.components.v1 as components
 warnings.filterwarnings('ignore')
 
 # Configure Streamlit page
@@ -813,10 +814,10 @@ def main():
             "Provide a detailed technical analysis based on RSI, MACD, Bollinger Bands, and moving averages."
         ).format(symbol)
         ai_prompt = st.text_area(
-            label="Enter your technical analysis question or prompt:",
+            label="Your technical analysis question:",
             value=example_prompt,
             height=150,
-            help="Type your technical analysis questions here. This prompt can be used with any AI chat system to get personalized technical analysis for this stock.",
+            help="Edit the prompt and click 'Open in Gemini' to get AI insights based on the latest data.",
             key=f"ai_prompt_{symbol}"
         )
         # Action button to open Gemini chat with the prompt
@@ -824,7 +825,34 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
-            copy_button = st.button("📋 Copy Prompt", key=f"copy_{symbol}")
+            html_code = f"""
+<script>
+function copyToClipboard(btn) {{
+    navigator.clipboard.writeText(`{ai_prompt}`).then(function() {{
+        // Check if the tick is already there to prevent adding multiple ticks
+        if (!btn.innerHTML.includes('✔')) {{
+            btn.innerHTML += ' ✔';
+        }}
+    }}, function(err) {{
+        console.error('Could not copy text: ', err);
+    }});
+}}
+</script>
+
+<button onclick="copyToClipboard(this)" 
+        style="padding: 8px 16px; 
+               border-radius: 8px; 
+               border: 1px solid #dcdcdc; 
+               background-color: white; 
+               color: #31333F; 
+               cursor: pointer; 
+               font-family: sans-serif;">
+    📋 Copy to Clipboard
+</button>
+"""
+
+            # 3. Render the HTML component in Streamlit
+            components.html(html_code, height=50)
         
         with col2:
             gemini_url = f"https://gemini.google.com/?q={urllib.parse.quote(example_prompt)}"
@@ -833,19 +861,6 @@ def main():
                 unsafe_allow_html=True
             )
         
-        if copy_button and ai_prompt:
-            # Use JavaScript to copy text to clipboard - show it via markdown for immediate execution
-            escaped_prompt = example_prompt.replace('\\', '\\\\').replace('`', '\\`').replace('"', '\\"')
-            st.markdown(
-                f"""<script>
-                    navigator.clipboard.writeText(`{escaped_prompt}`).then(function() {{
-                        alert("✅ Prompt copied to clipboard!");
-                    }}, function(err) {{
-                        console.error("Failed to copy: ", err);
-                    }});
-                </script>""",
-                unsafe_allow_html=True
-            )
     # Additional Analysis Tabs
     st.markdown("---")
     
